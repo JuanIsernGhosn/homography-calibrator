@@ -3,8 +3,8 @@ import cv2
 
 class HomographyCalculator:
 
-    def __init__(self):
-        self.image = Observable()
+    def __init__(self, filename, img):
+        self.image = Observable(Image(filename, img))
         self.left_up_corner_px = (0, 0)
         self.right_up_corner_px = (0, 0)
         self.left_down_corner_px = (0, 0)
@@ -20,13 +20,19 @@ class HomographyCalculator:
         coor = [self.left_up_corner_coor, self.right_up_corner_coor, self.left_down_corner_coor, self.right_down_corner_coor]
         self.h = cv2.findHomography(px, coor)
 
-    def set_image(self):
-        self.image.
+    def change_image(self, filename, img):
+        self.image.set(Image(filename, img))
+
+    def get_real_mousse_loc(self,point):
+        x = point[0]*self.image.get().width
+        y = point[1]*self.image.get().height
+        return (round(x),round(y))
 
 
 class Observable:
-    def __init__(self, initialValue=None):
-        self.data = initialValue
+
+    def __init__(self, data):
+        self.data = data
         self.callbacks = {}
 
     def addCallback(self, func):
@@ -35,16 +41,23 @@ class Observable:
     def delCallback(self, func):
         del self.callbacks[func]
 
-    def _docallbacks(self):
+    def _doAllCallbacks(self):
         for func in self.callbacks:
             func(self.data)
 
     def set(self, data):
         self.data = data
-        self._docallbacks()
+        self._doAllCallbacks()
 
     def get(self):
         return self.data
 
     def unset(self):
         self.data = None
+
+class Image:
+    def __init__(self, filename, img):
+        self.filename = filename
+        self.img = img
+        self.width = None if img is None else img.size[0]
+        self.height = None if img is None else img.size[1]
