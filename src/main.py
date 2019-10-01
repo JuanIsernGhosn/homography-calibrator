@@ -6,6 +6,7 @@ from src.homographycalculator import HomographyCalculator
 import getpass
 
 class Application():
+
     def __init__(self, root):
         self.root = root
         self.set_basic_options()
@@ -21,6 +22,7 @@ class Application():
         self.root.option_add("*Font", "Helvetica 12")  # Fuente predeterminada
         self.root.option_add('*tearOff', False)  # Deshabilita submenús flotantes
         self.root.minsize(1200, 800)  # Establece tamaño minimo ventana
+        self.point_selected = 0
 
     def set_commands(self):
         pass
@@ -70,10 +72,13 @@ class Application():
         MODES = [("Point 1", 0),("Point 2", 1),("Point 3", 2),("Point 4", 3)]
 
         v = StringVar()
-        v.set("L")
+        v.set(0)
+
+        def select_point():
+            self.point_selected=v.get()
 
         for i, (text, mode) in enumerate(MODES):
-            b = Radiobutton(grid_points, text=text, variable=v, value=mode, indicatoron=0)
+            b = Radiobutton(grid_points, text=text, variable=v, value=mode, indicatoron=0, command=select_point)
             b.grid(row=i+1, column=0, sticky=W, pady=2)
 
         b = Label(grid_points, text='Image location')
@@ -91,7 +96,7 @@ class Application():
             b.insert(0, '0.0, 0.0')
             b.grid(row=i+1, column=2, pady=2)
 
-        b =Button(grid_points, text ="Calculate Homography")
+        b=Button(grid_points, text ="Calculate Homography")
         b.grid(row=len(MODES)+1, columnspan=3)
 
         grid_points.pack(padx=50, pady=30)
@@ -114,22 +119,29 @@ class Application():
     def set_mousse_loc(self, point):
         self.label_pixel_loc_var.configure(text='('+str(point[0])+', '+str(point[1])+')')
 
+    def set_point_loc(self, point):
+        print('('+str(point[0])+', '+str(point[1])+')')
+
 class Controller:
     def __init__(self, root):
         self.view = Application(root)
 
         self.view.menu1.entryconfigure('Open image', command=self.change_image)
-
-
         self.calculator = HomographyCalculator(self.view.filename, self.view.img)
 
         self.calculator.image.addCallback(self.image_changed)
         self.view.panel_image.bind('<Motion>', self.change_mousse_loc)
+        self.view.panel_image.bind('<Button-1>', self.change_point_loc)
 
     def change_mousse_loc(self, event):
         x, y = event.x/self.view.img.size[0], event.y/self.view.img.size[1]
         point = self.calculator.get_real_mousse_loc((x,y))
         self.view.set_mousse_loc(point)
+
+    def update_point_loc(self, event):
+        x, y = event.x / self.view.img.size[0], event.y / self.view.img.size[1]
+        self.calculator.update_point_loc((x,y))
+        self.view.set_point_loc(point)
 
     def change_image(self):
         filename = filedialog.askopenfilename(initialdir = "'/home/jisern/repositories/homography-calibrator/src/", title = "Select file",
