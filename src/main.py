@@ -3,7 +3,8 @@ from tkinter import *
 from tkinter import ttk, filedialog
 from PIL import ImageTk, Image
 from src.homographycalculator import HomographyCalculator
-import getpass
+import numpy as np
+import itertools
 
 class Application():
 
@@ -16,6 +17,9 @@ class Application():
         filename = 'VIRAT_S_0503.jpg'
         img = Image.open(filename)
         self.set_image(filename, img)
+
+        h = np.zeros((3,3))
+        self.set_homography_matrix(h)
 
     def set_basic_options(self):
         self.root.title("Homography calibrator")
@@ -65,12 +69,16 @@ class Application():
         frame_img.pack(fill=X, anchor=N)
         self.panel_image.pack(anchor=N)
 
-        # Homography points
-        frame_points = Frame(tab_homography, borderwidth=1, relief="raised")
+        ## Homography information
+        frame_homo_info = Frame(tab_homography, borderwidth=1, relief="raised")
+        frame_points = Frame(frame_homo_info)
+
+        # Homography points (Radio buttons)
         grid_points = Frame(frame_points, borderwidth=1, relief="raised")
 
-        MODES = [("Point 1", 0),("Point 2", 1),("Point 3", 2),("Point 4", 3)]
+        Label(grid_points, text='Image location').grid(row=0, column=1, pady=2, rowspan=2)
 
+        MODES = [("Point 1", 0),("Point 2", 1),("Point 3", 2),("Point 4", 3)]
         v = StringVar()
         v.set(0)
 
@@ -79,30 +87,66 @@ class Application():
 
         for i, (text, mode) in enumerate(MODES):
             b = Radiobutton(grid_points, text=text, variable=v, value=mode, indicatoron=0, command=select_point)
-            b.grid(row=i+1, column=0, sticky=W, pady=2)
+            b.grid(row=i+2, column=0, sticky=W, pady=2)
 
-        b = Label(grid_points, text='Image location')
-        b.grid(row=0, column=1, pady=2)
+        # Homography points (Labels for location)
+        self.labels_points = []
+        for i in range(0,4):
+            label_point = Label(grid_points, text='(0.0, 0.0)')
+            label_point.grid(row=i+2, column=1, pady=2)
+            self.labels_points.append(label_point)
 
-        for i in range(0,len(MODES)):
-            b = Label(grid_points, text='(0, 0)')
-            b.grid(row=i+1, column=1, pady=2)
+        # Homography points (Coordinate entries)
+        Label(grid_points, text='Coordinates').grid(row=0, column=2, pady=2, columnspan=2)
+        Label(grid_points, text='X').grid(row=1, column=2, pady=2)
+        Label(grid_points, text='Y').grid(row=1, column=3, pady=2)
 
-        b = Label(grid_points, text='Coordinates (X, Y, Z=0)')
-        b.grid(row=0, column=2, pady=2)
+        vcmd = (self.root.register(self.validate),
+                '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
 
-        for i in range(0,len(MODES)):
-            b = Entry(grid_points)
-            b.insert(0, '0.0, 0.0')
-            b.grid(row=i+1, column=2, pady=2)
+        iterables = [range(0, 4), range(0, 2)]
+        self.entries_coord = []
+        for (i, j) in itertools.product(*iterables):
+            entry = Entry(grid_points, width=6, validate='key', validatecommand=vcmd, textvariable=0)
+            entry.insert(0, '0.0')
+            entry.grid(row=i+2, column=j+2, pady=2)
+            self.entries_coord.append(entry)
 
-        b=Button(grid_points, text ="Calculate Homography")
-        b.grid(row=len(MODES)+1, columnspan=3)
+        # Calcultate homography button
+        self.button_homography=Button(grid_points, text ="Calculate Homography")
+        self.button_homography.grid(row=len(MODES)+2, columnspan=4)
+        grid_points.pack(side=LEFT, padx=50, pady=30)
 
-        grid_points.pack(padx=50, pady=30)
-        frame_points.pack(fill=X, anchor=N)
+        ## Homography matrix preview
+        grid_matrix = Frame(frame_points, borderwidth=1, relief="raised")
+        iterables = [range(0, 3), range(0, 3)]
+        Label(grid_matrix,text='Homography Matrix').grid(row=0, column=0, columnspan=3)
+        self.labels_h = []
+        for (i, j) in itertools.product(*iterables):
+            lab = Label(grid_matrix, text='0.0')
+            lab.grid(row=1+i, column=j, pady=2)
+            self.labels_h.append(lab)
+        grid_matrix.pack(side=RIGHT, padx=50, pady=30)
 
+        frame_points.pack(anchor=N)
+        frame_homo_info.pack(fill='both', anchor=N)
         tab_parent.pack(expand=1, fill='both')
+
+    def validate(self, action, index, value_if_allowed,
+                 prior_value, text, validation_type, trigger_type, widget_name):
+        if value_if_allowed:
+            try:
+                float(value_if_allowed)
+                return True
+            except ValueError:
+                return False
+        else:
+            return False
+
+    def set_homography_matrix(self, matrix):
+        iterables = [range(0, 3), range(0, 3)]
+        for n, (i, j) in enumerate(itertools.product(*iterables)):
+            self.labels_h[n].configure(text=str(matrix[i][j]))
 
     def set_image(self, filename, img):
         self.img=img
@@ -117,21 +161,34 @@ class Application():
         self.label_filename_var.configure(text=filename)
 
     def set_mousse_loc(self, point):
-        self.label_pixel_loc_var.configure(text='('+str(point[0])+', '+str(point[1])+')')
+        self.label_pixel_loc_var.configure(text='('+str(round(point[0]))+', '+str(round(point[1]))+')')
 
-    def set_point_loc(self, point):
-        print('('+str(point[0])+', '+str(point[1])+')')
+    def set_point_loc(self, points):
+        for n in range(0, 4):
+            self.labels_points[n].configure(text='(' + str(round(points[n][0]))+', '+str(round(points[n][1])) + ')')
+
 
 class Controller:
     def __init__(self, root):
         self.view = Application(root)
-
         self.view.menu1.entryconfigure('Open image', command=self.change_image)
+        self.view.button_homography.configure(command=self.calculate_homography)
         self.calculator = HomographyCalculator(self.view.filename, self.view.img)
-
         self.calculator.image.addCallback(self.image_changed)
+        self.calculator.px.addCallback(self.point_updated)
+        self.calculator.h.addCallback(self.h_updated)
         self.view.panel_image.bind('<Motion>', self.change_mousse_loc)
-        self.view.panel_image.bind('<Button-1>', self.change_point_loc)
+        self.view.panel_image.bind('<Button-1>', self.update_point_loc)
+
+    def h_updated(self, matrix):
+        self.view.set_homography_matrix(matrix)
+
+    def calculate_homography(self):
+        coords = np.zeros((4,2), dtype=np.float32)
+        iterables = [range(0, coords.shape[0]), range(0, coords.shape[1])]
+        for n, (i, j) in enumerate(itertools.product(*iterables)):
+            coords[i][j]=self.view.entries_coord[n].get()
+        self.calculator.calculate_h(coords)
 
     def change_mousse_loc(self, event):
         x, y = event.x/self.view.img.size[0], event.y/self.view.img.size[1]
@@ -140,8 +197,7 @@ class Controller:
 
     def update_point_loc(self, event):
         x, y = event.x / self.view.img.size[0], event.y / self.view.img.size[1]
-        self.calculator.update_point_loc((x,y))
-        self.view.set_point_loc(point)
+        self.calculator.update_point_loc((x,y), self.view.point_selected)
 
     def change_image(self):
         filename = filedialog.askopenfilename(initialdir = "'/home/jisern/repositories/homography-calibrator/src/", title = "Select file",
@@ -154,11 +210,8 @@ class Controller:
     def image_changed(self, image):
         self.view.set_image(image.filename, image.img)
 
-
-
-
-
-
+    def point_updated(self, points):
+        self.view.set_point_loc(points)
 
 def main():
     root = Tk()
