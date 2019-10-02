@@ -9,7 +9,8 @@ import numpy as np
 class Controller:
     def __init__(self, root):
         self.view = ApplicationGUI(root)
-        self.view.menu1.entryconfigure('Open image', command=self.change_image)
+        self.view.menu1.entryconfigure('Open image', command=self.change_image_diag)
+        self.view.menu1.entryconfigure('Load config. file', command=self.load_conf_file)
         self.view.menu1.entryconfigure('Save config. file', command=self.save_conf_file)
         self.view.button_homography.configure(command=self.calculate_homography)
         self.calculator = HomographyCalculator()
@@ -18,6 +19,9 @@ class Controller:
         self.calculator.h.addCallback(self.h_updated)
         self.view.panel_image.bind('<Motion>', self.change_mousse_loc)
         self.view.panel_image.bind('<Button-1>', self.update_point_loc)
+
+    def load_conf_file(self):
+        pass
 
     def save_conf_file(self):
         filename=filedialog.asksaveasfile(mode='w', defaultextension=".txt")
@@ -50,6 +54,9 @@ class Controller:
                                               filetypes = (("jpeg files","*.jpg"),
                                                            ("png files","*.png"),
                                                            ("all files","*.*")))
+        if filename is None:
+            return
+
         self.change_image(filename)
 
     def change_image(self, filename):
