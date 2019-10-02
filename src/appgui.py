@@ -33,10 +33,10 @@ class ApplicationGUI():
         self.menu2 = Menu(menubar)
         menubar.add_cascade(menu=self.menu1, label='File')
         menubar.add_cascade(menu=self.menu2, label='Help')
-        self.menu1.add_command(label='Open image',underline=0, accelerator="Ctrl+o",compound=LEFT)
+        self.menu1.add_command(label='Open image', underline=0, compound=LEFT)
         self.menu1.add_separator()
-        self.menu1.add_command(label='Load config. file',underline=0,accelerator="Ctrl+f",compound=LEFT)
-        self.menu1.add_command(label='Save config. file', underline=0,compound=LEFT)
+        self.menu1.add_command(label='Load config. file', underline=0, compound=LEFT)
+        self.menu1.add_command(label='Save config. file', underline=0, compound=LEFT)
 
         # Tab manager
         tab_parent = ttk.Notebook(self.root)
