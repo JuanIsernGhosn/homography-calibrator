@@ -129,12 +129,21 @@ class ApplicationGUI():
                  prior_value, text, validation_type, trigger_type, widget_name):
         if value_if_allowed:
             try:
+
                 float(value_if_allowed)
                 return True
             except ValueError:
                 return False
         else:
             return False
+
+    def set_coord_entries(self, coords):
+        iterables = [range(0, coords.shape[0]), range(0, coords.shape[1])]
+        for n, (i, j) in enumerate(itertools.product(*iterables)):
+            self.entries_coord[n].config(validate="none")
+            self.entries_coord[n].delete(0, END)
+            self.entries_coord[n].insert(0,str(coords[i][j]))
+            self.entries_coord[n].config(validate="key")
 
     def set_homography_matrix(self, matrix):
         iterables = [range(0, 3), range(0, 3)]
