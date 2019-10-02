@@ -3,7 +3,7 @@ import cv2
 
 class HomographyCalculator:
 
-    def __init__(self, filename, img):
+    def __init__(self, filename=None, img=None):
         self.image = Observable(Image(filename, img))
         self.px = Observable(np.zeros((4,2), dtype=np.float32))
         self.coord = np.zeros((4,2), dtype=np.float32)
