@@ -28,3 +28,8 @@ class HomographyCalculator:
         px = self.px.data
         px[int(index)] = self.get_real_mousse_loc(point)
         self.px.set(px)
+
+    def update_point_coords(self, coords, index):
+        coord = self.coord.data
+        coord[int(index)] = coords
+        self.coord.set(coord)
