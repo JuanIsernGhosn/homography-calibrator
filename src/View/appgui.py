@@ -5,6 +5,8 @@ from PIL import ImageTk, Image
 import numpy as np
 import itertools
 
+MAP_TYPES = ['roadmap', 'terrain', 'satellite', 'hybrid']
+
 class ApplicationGUI():
 
     def __init__(self, root):
@@ -27,6 +29,10 @@ class ApplicationGUI():
         #self.panel_image.bind('<Motion>', self.motion)
 
     def set_GUI(self):
+
+        vcmd = (self.root.register(self.validate),
+                '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
+
         menubar = Menu(self.root)
         self.root['menu'] = menubar
         self.menu1 = Menu(menubar)
@@ -57,18 +63,61 @@ class ApplicationGUI():
         label_pixel_loc.pack(side=RIGHT)
         frame_img_info.pack(fill=X, anchor=N)
 
-        # Image view
-        frame_img = Frame(tab_homography, borderwidth=1, relief="raised")
-        self.panel_image = Label(frame_img, borderwidth=0)
-        frame_img.pack(fill=X, anchor=N)
-        self.panel_image.pack(anchor=N)
+        # Views section
+        view_section = Frame(tab_homography, borderwidth=1, relief="raised")
+        view_group_section = Frame(view_section)
+
+        # Camera view section
+        camera_view = Frame(view_group_section)
+
+        # Bird view section
+        bird_view = Frame(view_group_section)
+        map_info_form = Frame(bird_view, borderwidth=1, relief="raised")
+
+        label_lat = ttk.Label(map_info_form, text="Latitude:", padding=(5, 5))
+        label_lon = ttk.Label(map_info_form, text="Longitude:", padding=(5, 5))
+        self.entry_lat = Entry(map_info_form, width=11, validate='key', validatecommand=vcmd, textvariable=StringVar().set(0))
+        self.entry_lon = Entry(map_info_form, width=11, validate='key', validatecommand=vcmd, textvariable=StringVar().set(0))
+        self.search_button = Button(map_info_form, text="Search")
+        self.set_coordinates(0.0,0.0)
+
+        self.zoom_slidder = Scale(map_info_form, from_=0, to=22, orient=HORIZONTAL)
+        label_lat.pack(side=LEFT)
+        self.entry_lat.pack(side=LEFT)
+        label_lon.pack(side=LEFT)
+        self.entry_lon.pack(side=LEFT)
+        self.search_button.pack(side=LEFT, padx=5)
+        self.zoom_slidder.pack(side=LEFT, padx=32)
+        map_info_form.pack(fill=BOTH)
+        self.panel_bird_view_image = Label(bird_view)
+
+        map_type_section = Frame(bird_view)
+        self.map_type_rbs = []
+        self.map_type_var = StringVar()
+
+        for i, map_type in enumerate(MAP_TYPES):
+            rb = Radiobutton(map_type_section, text=map_type, value=map_type, var=self.map_type_var)
+            rb.grid(column=i, row=0)
+            self.map_type_rbs.append(rb)
+
+        self.panel_camera_image = Label(camera_view)
+
+        view_group_section.pack(anchor=N)
+        view_section.pack(fill='both', anchor=N)
+        camera_view.pack(side=LEFT, padx=5)
+        bird_view.pack(anchor=NE, padx=5)
+
+        self.panel_camera_image.pack(anchor=N)
+        self.panel_bird_view_image.pack(anchor=N)
+
+        map_type_section.pack()
 
         ## Homography information
-        frame_homo_info = Frame(tab_homography, borderwidth=1, relief="raised")
-        frame_points = Frame(frame_homo_info)
+        homog_section = Frame(tab_homography, borderwidth=1, relief="raised")
+        info_group_section = Frame(homog_section)
 
         # Homography points (Radio buttons)
-        grid_points = Frame(frame_points, borderwidth=1, relief="raised")
+        grid_points = Frame(info_group_section, borderwidth=1, relief="raised")
 
         Label(grid_points, text='Image location').grid(row=0, column=1, pady=2, rowspan=2)
 
@@ -92,26 +141,23 @@ class ApplicationGUI():
 
         # Homography points (Coordinate entries)
         Label(grid_points, text='Coordinates').grid(row=0, column=2, pady=2, columnspan=2)
-        Label(grid_points, text='X').grid(row=1, column=2, pady=2)
-        Label(grid_points, text='Y').grid(row=1, column=3, pady=2)
-
-        vcmd = (self.root.register(self.validate),
-                '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
+        Label(grid_points, text='Lat.').grid(row=1, column=2, pady=2)
+        Label(grid_points, text='Lon.').grid(row=1, column=3, pady=2)
 
         iterables = [range(0, 4), range(0, 2)]
         self.entries_coord = []
         for n, (i, j) in enumerate(itertools.product(*iterables)):
-            self.entries_coord.append(Entry(grid_points, width=6, validate='key', validatecommand=vcmd, textvariable=StringVar().set(0)))
+            self.entries_coord.append(Entry(grid_points, width=11, validate='key', validatecommand=vcmd, textvariable=StringVar().set(0)))
             self.entries_coord[n].insert(0, '0.0')
             self.entries_coord[n].grid(row=i+2, column=j+2, pady=2)
 
-        # Calcultate homography button
+        # Calculate homography button
         self.button_homography=Button(grid_points, text ="Calculate Homography")
         self.button_homography.grid(row=len(MODES)+2, columnspan=4)
         grid_points.pack(side=LEFT, padx=5, pady=30)
 
         ## Homography matrix preview
-        grid_matrix = Frame(frame_points, borderwidth=1, relief="raised")
+        grid_matrix = Frame(info_group_section, borderwidth=1, relief="raised")
         iterables = [range(0, 3), range(0, 3)]
         Label(grid_matrix,text='Homography Matrix').grid(row=0, column=0, columnspan=3, pady=15)
         self.labels_h = []
@@ -121,8 +167,8 @@ class ApplicationGUI():
             self.labels_h.append(lab)
         grid_matrix.pack(anchor=NE, padx=5, pady=30)
 
-        frame_points.pack(anchor=N)
-        frame_homo_info.pack(fill='both', anchor=N)
+        info_group_section.pack(anchor=N)
+        homog_section.pack(fill='both', anchor=N)
         tab_parent.pack(expand=1, fill='both')
 
     def validate(self, action, index, value_if_allowed,
@@ -150,17 +196,28 @@ class ApplicationGUI():
         for n, (i, j) in enumerate(itertools.product(*iterables)):
             self.labels_h[n].configure(text=str('%.10f'%(matrix[i][j])))
 
-    def set_image(self, filename, img):
-        self.img=img
+    def set_camera_image(self, filename, img):
+        self.cam_img=img
         self.filename=filename
         mywidth=800
         wpercent = (mywidth / float(img.size[0]))
         hsize = int((float(img.size[1]) * float(wpercent)))
-        self.img = img.resize((mywidth, hsize), Image.ANTIALIAS)
-        photo = ImageTk.PhotoImage(self.img)
-        self.panel_image.configure(image=photo)
-        self.panel_image.image=photo
+        self.cam_img = img.resize((mywidth, hsize), Image.ANTIALIAS)
+        photo = ImageTk.PhotoImage(self.cam_img)
+        self.panel_camera_image.configure(image=photo)
+        self.panel_camera_image.image=photo
         self.label_filename_var.configure(text=filename)
+
+    def set_bird_view_image(self, img):
+        photo = ImageTk.PhotoImage(img)
+        self.panel_bird_view_image.configure(image=photo)
+        self.panel_bird_view_image.image = photo
+
+    def set_zoom_slidder(self, value):
+        self.zoom_slidder.set(value)
+
+    def set_map_type_rb(self, value):
+        self.map_type_var.set(value)
 
     def set_mousse_loc(self, point):
         self.label_pixel_loc_var.configure(text='('+str(round(point[0]))+', '+str(round(point[1]))+')')
@@ -168,3 +225,13 @@ class ApplicationGUI():
     def set_point_loc(self, points):
         for n in range(0, 4):
             self.labels_points[n].configure(text='(' + str(round(points[n][0]))+', '+str(round(points[n][1])) + ')')
+
+    def set_coordinates(self, lat, lon):
+        self.insert_entry_without_validation(self.entry_lat, lat)
+        self.insert_entry_without_validation(self.entry_lon, lon)
+
+    def insert_entry_without_validation(self, entry, value):
+        entry.config(validate="none")
+        entry.delete(0, END)
+        entry.insert(0, value)
+        entry.configure(validate="key")
