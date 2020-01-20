@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 from tkinter import *
 from tkinter import ttk, filedialog
+import tkinter as tk
 from PIL import ImageTk, Image
 import numpy as np
 import itertools
+import os
+from View.scrollableframe import ScrollableFrame
 
 MAP_TYPES = ['roadmap', 'terrain', 'satellite', 'hybrid']
+POINT_ICONS = ['../../media/squared_cursor_red.png', '../../media/squared_cursor_blue.png',
+               '../../media/squared_cursor_green.png', '../../media/squared_cursor_magent.png']
 
 class ApplicationGUI():
 
@@ -50,9 +55,9 @@ class ApplicationGUI():
         tab_perimeters = Frame(tab_parent)
         tab_parent.add(tab_homography, text='Homography')
         tab_parent.add(tab_perimeters, text='Perimeters')
+        homography_content = ScrollableFrame(tab_homography)
 
-        # Image info frame
-        frame_img_info = ttk.Frame(tab_homography, borderwidth=2, relief="raised")
+        frame_img_info = ttk.Frame(homography_content.scrollable_frame, borderwidth=2, relief="raised")
         label_filename = ttk.Label(frame_img_info, text="File:", padding=(5, 5))
         self.label_filename_var = ttk.Label(frame_img_info, text="filename", padding=(5, 5))
         label_pixel_loc = ttk.Label(frame_img_info, text="(X, Y):", padding=(5, 5))
@@ -64,7 +69,7 @@ class ApplicationGUI():
         frame_img_info.pack(fill=X, anchor=N)
 
         # Views section
-        view_section = Frame(tab_homography, borderwidth=1, relief="raised")
+        view_section = Frame(homography_content.scrollable_frame, borderwidth=1, relief="raised")
         view_group_section = Frame(view_section)
 
         # Camera view section
@@ -89,7 +94,7 @@ class ApplicationGUI():
         self.search_button.pack(side=LEFT, padx=5)
         self.zoom_slidder.pack(side=LEFT, padx=32)
         map_info_form.pack(fill=BOTH)
-        self.panel_bird_view_image = Label(bird_view)
+        self.panel_bird_view_image = tk.Canvas(bird_view, width=640, height=640, bd=0, highlightthickness=0, relief='ridge')
 
         map_type_section = Frame(bird_view)
         self.map_type_rbs = []
@@ -100,20 +105,20 @@ class ApplicationGUI():
             rb.grid(column=i, row=0)
             self.map_type_rbs.append(rb)
 
-        self.panel_camera_image = Label(camera_view)
+        self.panel_camera_canvas = tk.Canvas(camera_view, width=800, height=600, bd=0, highlightthickness=0, relief='ridge')
 
         view_group_section.pack(anchor=N)
         view_section.pack(fill='both', anchor=N)
         camera_view.pack(side=LEFT, padx=5)
         bird_view.pack(anchor=NE, padx=5)
 
-        self.panel_camera_image.pack(anchor=N)
+        self.panel_camera_canvas.pack(anchor=N)
         self.panel_bird_view_image.pack(anchor=N)
 
         map_type_section.pack()
 
         ## Homography information
-        homog_section = Frame(tab_homography, borderwidth=1, relief="raised")
+        homog_section = Frame(homography_content.scrollable_frame, borderwidth=1, relief="raised")
         info_group_section = Frame(homog_section)
 
         # Homography points (Radio buttons)
@@ -169,6 +174,8 @@ class ApplicationGUI():
 
         info_group_section.pack(anchor=N)
         homog_section.pack(fill='both', anchor=N)
+
+        homography_content.pack(fill='both', expand=True)
         tab_parent.pack(expand=1, fill='both')
 
     def validate(self, action, index, value_if_allowed,
@@ -199,18 +206,24 @@ class ApplicationGUI():
     def set_camera_image(self, filename, img):
         self.cam_img=img
         self.filename=filename
+
         mywidth=800
         wpercent = (mywidth / float(img.size[0]))
         hsize = int((float(img.size[1]) * float(wpercent)))
+
         self.cam_img = img.resize((mywidth, hsize), Image.ANTIALIAS)
         photo = ImageTk.PhotoImage(self.cam_img)
-        self.panel_camera_image.configure(image=photo)
-        self.panel_camera_image.image=photo
+
+        self.panel_camera_canvas.config(width=mywidth, height=hsize)
+
+        self.panel_camera_canvas.create_image(0, 0, anchor=NW, image=photo)
+        self.panel_camera_canvas.image = photo
+
         self.label_filename_var.configure(text=filename)
 
     def set_bird_view_image(self, img):
         photo = ImageTk.PhotoImage(img)
-        self.panel_bird_view_image.configure(image=photo)
+        self.panel_bird_view_image.create_image(0,0, anchor=NW, image=photo)
         self.panel_bird_view_image.image = photo
 
     def set_zoom_slidder(self, value):
@@ -225,6 +238,32 @@ class ApplicationGUI():
     def set_point_loc(self, points):
         for n in range(0, 4):
             self.labels_points[n].configure(text='(' + str(round(points[n][0]))+', '+str(round(points[n][1])) + ')')
+
+    def update_point_marks(self, points, img_size):
+
+        self.panel_camera_canvas.icons = []
+
+        for i, (img_point_loc, icon) in enumerate(zip(self.get_img_point_loc(points, img_size), POINT_ICONS)):
+            script_dir = os.path.dirname(__file__)
+            icon_path = os.path.join(script_dir, icon)
+            photo = ImageTk.PhotoImage(Image.open(icon_path))
+            icon_center = (photo.width()/2, photo.height()/2)
+            self.panel_camera_canvas.icons.append(photo)
+            self.panel_camera_canvas.create_image((int(img_point_loc[0]-icon_center[0]), int(img_point_loc[1]-icon_center[1])),
+                                                  image=self.panel_camera_canvas.icons[i], anchor='nw')
+
+    def update_coord_marks(self, points):
+        print(points)
+
+    def get_img_point_loc(self, points, img_size):
+        puntos = points.copy()
+        puntos[:, 0] = puntos[:, 0] / img_size[1] * self.panel_camera_canvas.winfo_width()
+        puntos[:, 1] = puntos[:, 1] / img_size[0] * self.panel_camera_canvas.winfo_height()
+        return puntos
+
+    def draw_point_marks(self, points):
+        img = PhotoImage(file='media/squared_cursor.png')
+        self.create_image(250, 250, image=img)
 
     def set_coordinates(self, lat, lon):
         self.insert_entry_without_validation(self.entry_lat, lat)
