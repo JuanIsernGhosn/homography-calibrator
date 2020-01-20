@@ -29,8 +29,8 @@ class Controller:
             rb.configure(command=self.change_map_type)
         self.view.search_button.configure(command=self.change_coords)
 
-        self.view.panel_camera_image.bind('<Motion>', self.change_mousse_loc)
-        self.view.panel_camera_image.bind('<Button-1>', self.update_point_loc)
+        self.view.panel_camera_canvas.bind('<Motion>', self.change_mousse_loc)
+        self.view.panel_camera_canvas.bind('<Button-1>', self.update_point_loc)
         self.view.panel_bird_view_image.bind('<Button-1>', self.update_point_coords)
 
     def load_conf_file(self):
@@ -60,6 +60,13 @@ class Controller:
 
     def coord_updated(self, coords):
         self.view.set_coord_entries(coords)
+        px_coords = self.coords_to_px(coords)
+        self.view.update_coord_marks(px_coords)
+
+    def coords_to_px(self, coords):
+        for coord in coords:
+            print(self.bird_viewer.get_px_from_coord(coord))
+
 
     def calculate_homography(self):
         coords = np.zeros((4,2), dtype=np.float32)
@@ -79,8 +86,8 @@ class Controller:
         self.calculator.update_point_loc((x,y), self.view.point_selected)
 
     def update_point_coords(self, event):
-        x, y = self.bird_viewer.get_coord_from_px(event.x, event.y)
-        self.calculator.update_point_coords((x,y), self.view.point_selected)
+        (lat, lon) = self.bird_viewer.get_coord_from_px((event.x, event.y))
+        self.calculator.update_point_coords((lat,lon), self.view.point_selected)
 
     def change_image_diag(self):
         filename = filedialog.askopenfile(initialdir = "'/home/jisern/repositories/homography-calibrator/src/", title = "Select file",
@@ -92,8 +99,8 @@ class Controller:
         self.change_camera_image(filename.name)
 
     def change_camera_image(self, filename):
-        img = Image.open(filename)
-        self.calculator.change_image(filename, img)
+        self.img = Image.open(filename)
+        self.calculator.change_image(filename, self.img)
 
     def camera_image_changed(self, image):
         self.view.set_camera_image(image.filename, image.img)
@@ -109,6 +116,7 @@ class Controller:
 
     def point_updated(self, points):
         self.view.set_point_loc(points)
+        self.view.update_point_marks(points, (self.calculator.image.get().height, self.calculator.image.get().width))
 
     def change_zoom(self, event):
         self.bird_viewer.change_zoom(int(event))
