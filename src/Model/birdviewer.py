@@ -5,10 +5,13 @@ import os
 from io import BytesIO
 from Model.observable import Observable
 from Model.map import Map
+import math
 
 _EARTHPIX = 268435456  # Number of pixels in half the earth's circumference at zoom = 21
 _DEGREE_PRECISION = 4  # Number of decimal places for rounding coordinates
 _TILESIZE = 640        # Larget tile we can grab without paying
+_DEGREE_PRECISION = 4  # Number of decimal places for rounding coordinates
+_pixrad = _EARTHPIX / math.pi
 
 
 def _grab_tile(lat, lon, zoom, maptype, _TILESIZE):
@@ -64,6 +67,33 @@ class BirdViewer:
         map.img = map_img
         self.map.set(map)
 
-    def get_coord_from_px(self, x, y):
-        # [TODO: Transform map px to coordinates]
-        return x, y
+    def get_coord_from_px(self, px_point):
+
+        latitude = self.map.get().lat
+        longitude = self.map.get().lon
+
+        # https://groups.google.com/forum/#!topic/google-maps-js-api-v3/hDRO4oHVSeM
+        pixels_per_meter = 2 ** self.map.get().zoom / (156543.03392 * math.cos(math.radians(latitude)))
+
+        lonpix = _EARTHPIX + longitude * math.radians(_pixrad)
+
+        sinlat = math.sin(math.radians(latitude))
+        latpix = _EARTHPIX - _pixrad * math.log((1 + sinlat) / (1 - sinlat)) / 2
+
+        print(latpix, lonpix)
+
+        return latpix, lonpix
+
+    def _pixels_to_degrees(self, pixels):
+        return pixels * 2 ** (21 - self.map.get().zoom)
+
+    def get_px_from_coord(self, coord):
+        pass
+
+    def _pix_to_lon(self, lonpix):
+        return math.degrees((lonpix + self._pixels_to_degrees(_TILESIZE) - _EARTHPIX) / _pixrad)
+
+    def _pix_to_lat(self, latpix):
+        return math.degrees(math.pi / 2 - 2 * math.atan(math.exp(((latpix + self._pixels_to_degrees(_TILESIZE)) - _EARTHPIX) / _pixrad)))
+
+
