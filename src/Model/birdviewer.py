@@ -80,7 +80,11 @@ class BirdViewer:
         sinlat = math.sin(math.radians(latitude))
         latpix = _EARTHPIX - _pixrad * math.log((1 + sinlat) / (1 - sinlat)) / 2
 
-        print(latpix, lonpix)
+        print(px_point[0])
+        print(px_point[0]-(_TILESIZE/2))
+        print(self._pixels_to_degrees(px_point[0]-(_TILESIZE/2)))
+
+        print(self._pix_to_lat(latpix+self._pixels_to_degrees(px_point[1]-(_TILESIZE/2))), self._pix_to_lon(lonpix+self._pixels_to_degrees(-px_point[0]+(_TILESIZE/2))))
 
         return latpix, lonpix
 
@@ -94,6 +98,6 @@ class BirdViewer:
         return math.degrees((lonpix + self._pixels_to_degrees(_TILESIZE) - _EARTHPIX) / _pixrad)
 
     def _pix_to_lat(self, latpix):
-        return math.degrees(math.pi / 2 - 2 * math.atan(math.exp(((latpix + self._pixels_to_degrees(_TILESIZE)) - _EARTHPIX) / _pixrad)))
+        return math.degrees(math.pi / 2 - 2 * math.atan(math.exp((latpix - _EARTHPIX) / _pixrad)))
 
 
