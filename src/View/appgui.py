@@ -207,7 +207,7 @@ class ApplicationGUI():
         self.cam_img=img
         self.filename=filename
 
-        mywidth=800
+        mywidth=640
         wpercent = (mywidth / float(img.size[0]))
         hsize = int((float(img.size[1]) * float(wpercent)))
 
