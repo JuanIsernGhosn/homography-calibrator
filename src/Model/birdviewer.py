@@ -72,21 +72,15 @@ class BirdViewer:
         latitude = self.map.get().lat
         longitude = self.map.get().lon
 
-        # https://groups.google.com/forum/#!topic/google-maps-js-api-v3/hDRO4oHVSeM
-        pixels_per_meter = 2 ** self.map.get().zoom / (156543.03392 * math.cos(math.radians(latitude)))
-
-        lonpix = _EARTHPIX + longitude * math.radians(_pixrad)
+        lonpix = int(_EARTHPIX + longitude * math.radians(_pixrad))
 
         sinlat = math.sin(math.radians(latitude))
-        latpix = _EARTHPIX - _pixrad * math.log((1 + sinlat) / (1 - sinlat)) / 2
+        latpix = int(_EARTHPIX - _pixrad * math.log((1 + sinlat) / (1 - sinlat)) / 2)
 
-        print(px_point[0])
-        print(px_point[0]-(_TILESIZE/2))
-        print(self._pixels_to_degrees(px_point[0]-(_TILESIZE/2)))
+        lat = self._pix_to_lat(latpix+self._pixels_to_degrees(px_point[1]-(_TILESIZE/2)))
+        lon = self._pix_to_lon(lonpix+self._pixels_to_degrees(px_point[0]-(_TILESIZE/2)))
 
-        print(self._pix_to_lat(latpix+self._pixels_to_degrees(px_point[1]-(_TILESIZE/2))), self._pix_to_lon(lonpix+self._pixels_to_degrees(-px_point[0]+(_TILESIZE/2))))
-
-        return latpix, lonpix
+        return lat, lon
 
     def _pixels_to_degrees(self, pixels):
         return pixels * 2 ** (21 - self.map.get().zoom)
@@ -95,7 +89,7 @@ class BirdViewer:
         pass
 
     def _pix_to_lon(self, lonpix):
-        return math.degrees((lonpix + self._pixels_to_degrees(_TILESIZE) - _EARTHPIX) / _pixrad)
+        return math.degrees((lonpix - _EARTHPIX) / _pixrad)
 
     def _pix_to_lat(self, latpix):
         return math.degrees(math.pi / 2 - 2 * math.atan(math.exp((latpix - _EARTHPIX) / _pixrad)))
