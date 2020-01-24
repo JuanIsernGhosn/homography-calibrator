@@ -77,16 +77,45 @@ class BirdViewer:
         sinlat = math.sin(math.radians(latitude))
         latpix = int(_EARTHPIX - _pixrad * math.log((1 + sinlat) / (1 - sinlat)) / 2)
 
-        lat = self._pix_to_lat(latpix+self._pixels_to_degrees(px_point[1]-(_TILESIZE/2)))
-        lon = self._pix_to_lon(lonpix+self._pixels_to_degrees(px_point[0]-(_TILESIZE/2)))
+        lat_args = latpix+self._pixels_to_degrees(px_point[1]-(_TILESIZE/2))
+        lon_args = lonpix+self._pixels_to_degrees(px_point[0]-(_TILESIZE/2))
+
+        print(lat_args)
+        print(lon_args)
+
+        lat = self._pix_to_lat(lat_args)
+        lon = self._pix_to_lon(lon_args)
+
+        print(lat)
+        print(lon)
+
+        print(self._lat_to_pix(lat))
+        print(self._lon_to_pix(lon))
 
         return lat, lon
 
+    def get_px_from_coord(self, coord_point):
+
+        latitude = coord_point[0]
+        longitude = coord_point[1]
+
+        latpix = self._pix_to_lat(latitude)
+        lonpix = self._pix_to_lon(longitude)
+
+        return (latpix, lonpix)
+
+    def _degrees_to_pixels(self, degrees):
+        return degrees / 2 ** (21 - self.map.get().zoom)
+
+    def _lat_to_pix(self, lat):
+        hola = (math.tan(math.radians(lat)/2+math.pi))
+        return _pixrad * math.exp(-1) * math.log(hola) +_EARTHPIX
+
+    def _lon_to_pix(self, lon):
+        return math.radians(lon)*_pixrad+_EARTHPIX
+
     def _pixels_to_degrees(self, pixels):
         return pixels * 2 ** (21 - self.map.get().zoom)
-
-    def get_px_from_coord(self, coord):
-        pass
 
     def _pix_to_lon(self, lonpix):
         return math.degrees((lonpix - _EARTHPIX) / _pixrad)
