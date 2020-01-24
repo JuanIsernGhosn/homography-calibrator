@@ -8,6 +8,7 @@ class HomographyCalculator:
     def __init__(self, filename=None, img=None):
         self.image = Observable(Image(filename, img))
         self.px = Observable(np.zeros((4,2), dtype=np.float32))
+        self.px_bird = Observable(np.zeros((4, 2), dtype=np.float32))
         self.coord = Observable(np.zeros((4,2), dtype=np.float32))
         self.h = Observable(np.zeros((3,3), dtype=np.float32))
 
@@ -29,7 +30,12 @@ class HomographyCalculator:
         px[int(index)] = self.get_real_mousse_loc(point)
         self.px.set(px)
 
-    def update_point_coords(self, coords, index):
+    def update_coords(self, coords, index):
         coord = self.coord.data
         coord[int(index)] = coords
         self.coord.set(coord)
+
+    def update_point_coords(self, point, index):
+        px_bird = self.px_bird.data
+        px_bird[int(index)] = point
+        self.px_bird.set(px_bird)
