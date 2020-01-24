@@ -27,6 +27,7 @@ class ApplicationGUI():
         self.root.option_add("*Font", "Helvetica 12")  # Fuente predeterminada
         self.root.option_add('*tearOff', False)  # Deshabilita submenús flotantes
         self.root.minsize(1200, 800)  # Establece tamaño minimo ventana
+        self.root.attributes('-fullscreen', True)
         self.point_selected = 0
 
     def set_commands(self):
@@ -182,7 +183,6 @@ class ApplicationGUI():
                  prior_value, text, validation_type, trigger_type, widget_name):
         if value_if_allowed:
             try:
-
                 float(value_if_allowed)
                 return True
             except ValueError:
@@ -207,7 +207,7 @@ class ApplicationGUI():
         self.cam_img=img
         self.filename=filename
 
-        mywidth=640
+        mywidth=800
         wpercent = (mywidth / float(img.size[0]))
         hsize = int((float(img.size[1]) * float(wpercent)))
 
@@ -253,7 +253,16 @@ class ApplicationGUI():
                                                   image=self.panel_camera_canvas.icons[i], anchor='nw')
 
     def update_coord_marks(self, points):
-        print(points)
+        self.panel_bird_view_image.icons = []
+        for i, (img_point_loc, icon) in enumerate(zip(points, POINT_ICONS)):
+            script_dir = os.path.dirname(__file__)
+            icon_path = os.path.join(script_dir, icon)
+            photo = ImageTk.PhotoImage(Image.open(icon_path))
+            icon_center = (photo.width() / 2, photo.height() / 2)
+            self.panel_bird_view_image.icons.append(photo)
+            self.panel_bird_view_image.create_image(
+                (int(img_point_loc[0] - icon_center[0]), int(img_point_loc[1] - icon_center[1])),
+                image=self.panel_bird_view_image.icons[i], anchor='nw')
 
     def get_img_point_loc(self, points, img_size):
         puntos = points.copy()
@@ -266,11 +275,12 @@ class ApplicationGUI():
         self.create_image(250, 250, image=img)
 
     def set_coordinates(self, lat, lon):
-        self.insert_entry_without_validation(self.entry_lat, lat)
-        self.insert_entry_without_validation(self.entry_lon, lon)
+        insert_entry_without_validation(self.entry_lat, lat)
+        insert_entry_without_validation(self.entry_lon, lon)
 
-    def insert_entry_without_validation(self, entry, value):
-        entry.config(validate="none")
-        entry.delete(0, END)
-        entry.insert(0, value)
-        entry.configure(validate="key")
+
+def insert_entry_without_validation(entry, value):
+    entry.config(validate="none")
+    entry.delete(0, END)
+    entry.insert(0, value)
+    entry.configure(validate="key")
