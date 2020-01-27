@@ -7,8 +7,8 @@ import numpy as np
 import itertools
 import os
 from View.scrollableframe import ScrollableFrame
+from View.mapviewer import MapViewer
 
-MAP_TYPES = ['roadmap', 'terrain', 'satellite', 'hybrid']
 POINT_ICONS = ['../../media/squared_cursor_red.png', '../../media/squared_cursor_blue.png',
                '../../media/squared_cursor_green.png', '../../media/squared_cursor_magent.png']
 
@@ -77,46 +77,17 @@ class ApplicationGUI():
         camera_view = Frame(view_group_section)
 
         # Bird view section
-        bird_view = Frame(view_group_section)
-        map_info_form = Frame(bird_view, borderwidth=1, relief="raised")
-
-        label_lat = ttk.Label(map_info_form, text="Latitude:", padding=(5, 5))
-        label_lon = ttk.Label(map_info_form, text="Longitude:", padding=(5, 5))
-        self.entry_lat = Entry(map_info_form, width=11, validate='key', validatecommand=vcmd, textvariable=StringVar().set(0))
-        self.entry_lon = Entry(map_info_form, width=11, validate='key', validatecommand=vcmd, textvariable=StringVar().set(0))
-        self.search_button = Button(map_info_form, text="Search")
-        self.set_coordinates(0.0,0.0)
-
-        self.zoom_slidder = Scale(map_info_form, from_=0, to=22, orient=HORIZONTAL)
-        label_lat.pack(side=LEFT)
-        self.entry_lat.pack(side=LEFT)
-        label_lon.pack(side=LEFT)
-        self.entry_lon.pack(side=LEFT)
-        self.search_button.pack(side=LEFT, padx=5)
-        self.zoom_slidder.pack(side=LEFT, padx=32)
-        map_info_form.pack(fill=BOTH)
-        self.panel_bird_view_image = tk.Canvas(bird_view, width=640, height=640, bd=0, highlightthickness=0, relief='ridge')
-
-        map_type_section = Frame(bird_view)
-        self.map_type_rbs = []
-        self.map_type_var = StringVar()
-
-        for i, map_type in enumerate(MAP_TYPES):
-            rb = Radiobutton(map_type_section, text=map_type, value=map_type, var=self.map_type_var)
-            rb.grid(column=i, row=0)
-            self.map_type_rbs.append(rb)
+        self.homo_viewer = MapViewer(view_group_section)
 
         self.panel_camera_canvas = tk.Canvas(camera_view, width=800, height=600, bd=0, highlightthickness=0, relief='ridge')
 
         view_group_section.pack(anchor=N)
         view_section.pack(fill='both', anchor=N)
         camera_view.pack(side=LEFT, padx=5)
-        bird_view.pack(anchor=NE, padx=5)
+        self.homo_viewer.pack(anchor=NE, padx=5)
 
         self.panel_camera_canvas.pack(anchor=N)
-        self.panel_bird_view_image.pack(anchor=N)
 
-        map_type_section.pack()
 
         ## Homography information
         homog_section = Frame(homography_content.scrollable_frame, borderwidth=1, relief="raised")
@@ -141,7 +112,7 @@ class ApplicationGUI():
         # Homography points (Labels for location)
         self.labels_points = []
         for i in range(0,4):
-            label_point = Label(grid_points, text='(0.0, 0.0)')
+            label_point = Label(grid_points, text='(0, 0)')
             label_point.grid(row=i+2, column=1, pady=2)
             self.labels_points.append(label_point)
 
@@ -177,6 +148,11 @@ class ApplicationGUI():
         homog_section.pack(fill='both', anchor=N)
 
         homography_content.pack(fill='both', expand=True)
+
+        self.per_viewer = MapViewer(tab_perimeters)
+        self.per_viewer.pack(anchor=NE, padx=5)
+
+
         tab_parent.pack(expand=1, fill='both')
 
     def validate(self, action, index, value_if_allowed,
@@ -221,23 +197,12 @@ class ApplicationGUI():
 
         self.label_filename_var.configure(text=filename)
 
-    def set_bird_view_image(self, img):
-        photo = ImageTk.PhotoImage(img)
-        self.panel_bird_view_image.create_image(0,0, anchor=NW, image=photo)
-        self.panel_bird_view_image.image = photo
-
-    def set_zoom_slidder(self, value):
-        self.zoom_slidder.set(value)
-
-    def set_map_type_rb(self, value):
-        self.map_type_var.set(value)
-
     def set_mousse_loc(self, point):
         self.label_pixel_loc_var.configure(text='('+str(round(point[0]))+', '+str(round(point[1]))+')')
 
     def set_point_loc(self, points):
         for n in range(0, 4):
-            self.labels_points[n].configure(text='(' + str(round(points[n][0]))+', '+str(round(points[n][1])) + ')')
+            self.labels_points[n].configure(text='(' + str(int(round(points[n][0])))+', '+str(int(round(points[n][1]))) + ')')
 
     def update_point_marks(self, points, img_size):
 
@@ -253,16 +218,7 @@ class ApplicationGUI():
                                                   image=self.panel_camera_canvas.icons[i], anchor='nw')
 
     def update_coord_marks(self, points):
-        self.panel_bird_view_image.icons = []
-        for i, (img_point_loc, icon) in enumerate(zip(points, POINT_ICONS)):
-            script_dir = os.path.dirname(__file__)
-            icon_path = os.path.join(script_dir, icon)
-            photo = ImageTk.PhotoImage(Image.open(icon_path))
-            icon_center = (photo.width() / 2, photo.height() / 2)
-            self.panel_bird_view_image.icons.append(photo)
-            self.panel_bird_view_image.create_image(
-                (int(img_point_loc[0] - icon_center[0]), int(img_point_loc[1] - icon_center[1])),
-                image=self.panel_bird_view_image.icons[i], anchor='nw')
+        self.homo_viewer.update_coord_marks(points)
 
     def get_img_point_loc(self, points, img_size):
         puntos = points.copy()
@@ -275,8 +231,7 @@ class ApplicationGUI():
         self.create_image(250, 250, image=img)
 
     def set_coordinates(self, lat, lon):
-        insert_entry_without_validation(self.entry_lat, lat)
-        insert_entry_without_validation(self.entry_lon, lon)
+        self.homo_viewer.set_coordinates(lat, lon)
 
 
 def insert_entry_without_validation(entry, value):
