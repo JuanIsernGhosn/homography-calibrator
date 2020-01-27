@@ -25,6 +25,12 @@ class HomographyCalculator:
         y = point[1]*self.image.get().height
         return (x,y)
 
+    def reset_coords(self):
+        self.coord.set(np.zeros((4,2), dtype=np.float32))
+
+    def reset_px_bird(self):
+        self.px_bird.set(np.zeros((4,2), dtype=np.float32))
+
     def update_point_loc(self, point, index):
         px = self.px.data
         px[int(index)] = self.get_real_mousse_loc(point)
