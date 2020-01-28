@@ -79,12 +79,12 @@ class MapViewer(Frame):
                 (int(img_point_loc[0] - icon_center[0]), int(img_point_loc[1] - icon_center[1])),
                 image=self.panel_bird_view_image.icons[i], anchor='nw')
 
-    def per_updated(self, perimeters):
+    def update_per_marks(self, perimeters):
         self.panel_bird_view_image.create_image(0, 0, anchor=NW, image=self.panel_bird_view_image.image)
         for perimeter in perimeters:
             perimeter = list(sum(perimeter, ()))
+            if not perimeter: continue
             self.panel_bird_view_image.create_polygon(perimeter, outline='#f11', fill='#1f1', width=1)
-            print(perimeter)
 
 
 def insert_entry_without_validation(entry, value):

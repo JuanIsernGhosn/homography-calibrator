@@ -1,6 +1,6 @@
 import json
 
-def serialize_data(homography):
+def serialize_homo_data(homography):
     json_ser={
         "image_name": homography.image.get().filename,
         "px": homography.px.get().tolist(),
