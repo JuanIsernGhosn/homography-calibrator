@@ -12,6 +12,7 @@ from View.mapviewer import MapViewer
 POINT_ICONS = ['../../media/squared_cursor_red.png', '../../media/squared_cursor_blue.png',
                '../../media/squared_cursor_green.png', '../../media/squared_cursor_magent.png']
 
+
 class ApplicationGUI():
 
     def __init__(self, root):
@@ -19,7 +20,7 @@ class ApplicationGUI():
         self.set_basic_options()
         self.set_GUI()
         self.set_commands()
-        h = np.zeros((3,3))
+        h = np.zeros((3, 3))
         self.set_homography_matrix(h)
 
     def set_basic_options(self):
@@ -32,11 +33,11 @@ class ApplicationGUI():
 
     def set_commands(self):
         pass
-        #self.panel_image.bind('<Motion>', self.motion)
+        # self.panel_image.bind('<Motion>', self.motion)
 
     def set_GUI(self):
 
-        vcmd = (self.root.register(self.validate),
+        vcmd = (self.root.register(validate),
                 '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
 
         menubar = Menu(self.root)
@@ -47,8 +48,11 @@ class ApplicationGUI():
         menubar.add_cascade(menu=self.menu2, label='Help')
         self.menu1.add_command(label='Open image', underline=0, compound=LEFT)
         self.menu1.add_separator()
-        self.menu1.add_command(label='Load config. file', underline=0, compound=LEFT)
-        self.menu1.add_command(label='Save config. file', underline=0, compound=LEFT)
+        self.menu1.add_command(label='Load camera config.', underline=0, compound=LEFT)
+        self.menu1.add_command(label='Save camera config.', underline=0, compound=LEFT)
+        self.menu1.add_separator()
+        self.menu1.add_command(label='Save perimeter config', underline=0, compound=LEFT)
+        self.menu2.add_command(label='Documentation', underline=0, compound=LEFT)
 
         # Tab manager
         tab_parent = ttk.Notebook(self.root)
@@ -70,8 +74,8 @@ class ApplicationGUI():
         frame_img_info.pack(fill=X, anchor=N)
 
         # Views section
-        view_section = Frame(homography_content.scrollable_frame, borderwidth=1, relief="raised")
-        view_group_section = Frame(view_section)
+        homo_view_section = Frame(homography_content.scrollable_frame, borderwidth=1, relief="raised")
+        view_group_section = Frame(homo_view_section)
 
         # Camera view section
         camera_view = Frame(view_group_section)
@@ -79,15 +83,15 @@ class ApplicationGUI():
         # Bird view section
         self.homo_viewer = MapViewer(view_group_section)
 
-        self.panel_camera_canvas = tk.Canvas(camera_view, width=800, height=600, bd=0, highlightthickness=0, relief='ridge')
+        self.panel_camera_canvas = tk.Canvas(camera_view, width=800, height=600, bd=0, highlightthickness=0,
+                                             relief='ridge')
 
         view_group_section.pack(anchor=N)
-        view_section.pack(fill='both', anchor=N)
+        homo_view_section.pack(fill='both', anchor=N)
         camera_view.pack(side=LEFT, padx=5)
         self.homo_viewer.pack(anchor=NE, padx=5)
 
         self.panel_camera_canvas.pack(anchor=N)
-
 
         ## Homography information
         homog_section = Frame(homography_content.scrollable_frame, borderwidth=1, relief="raised")
@@ -98,22 +102,22 @@ class ApplicationGUI():
 
         Label(grid_points, text='Image location').grid(row=0, column=1, pady=2, rowspan=2)
 
-        MODES = [("Point 1", 0),("Point 2", 1),("Point 3", 2),("Point 4", 3)]
+        MODES = [("Point 1", 0), ("Point 2", 1), ("Point 3", 2), ("Point 4", 3)]
         v = StringVar()
         v.set(0)
 
         def select_point():
-            self.point_selected=v.get()
+            self.point_selected = v.get()
 
         for i, (text, mode) in enumerate(MODES):
             b = Radiobutton(grid_points, text=text, variable=v, value=mode, indicatoron=0, command=select_point)
-            b.grid(row=i+2, column=0, sticky=W, pady=2)
+            b.grid(row=i + 2, column=0, sticky=W, pady=2)
 
         # Homography points (Labels for location)
         self.labels_points = []
-        for i in range(0,4):
+        for i in range(0, 4):
             label_point = Label(grid_points, text='(0, 0)')
-            label_point.grid(row=i+2, column=1, pady=2)
+            label_point.grid(row=i + 2, column=1, pady=2)
             self.labels_points.append(label_point)
 
         # Homography points (Coordinate entries)
@@ -124,66 +128,78 @@ class ApplicationGUI():
         iterables = [range(0, 4), range(0, 2)]
         self.entries_coord = []
         for n, (i, j) in enumerate(itertools.product(*iterables)):
-            self.entries_coord.append(Entry(grid_points, width=11, validate='key', validatecommand=vcmd, textvariable=StringVar().set(0)))
+            self.entries_coord.append(
+                Entry(grid_points, width=11, validate='key', validatecommand=vcmd, textvariable=StringVar().set(0)))
             self.entries_coord[n].insert(0, '0.0')
-            self.entries_coord[n].grid(row=i+2, column=j+2, pady=2)
+            self.entries_coord[n].grid(row=i + 2, column=j + 2, pady=2)
 
         # Calculate homography button
-        self.button_homography=Button(grid_points, text ="Calculate Homography")
-        self.button_homography.grid(row=len(MODES)+2, columnspan=4)
+        self.button_homography = Button(grid_points, text="Calculate Homography")
+        self.button_homography.grid(row=len(MODES) + 2, columnspan=4)
         grid_points.pack(side=LEFT, padx=5, pady=30)
 
         ## Homography matrix preview
         grid_matrix = Frame(info_group_section, borderwidth=1, relief="raised")
         iterables = [range(0, 3), range(0, 3)]
-        Label(grid_matrix,text='Homography Matrix').grid(row=0, column=0, columnspan=3, pady=15)
+        Label(grid_matrix, text='Homography Matrix').grid(row=0, column=0, columnspan=3, pady=15)
         self.labels_h = []
         for (i, j) in itertools.product(*iterables):
             lab = Label(grid_matrix, text='0.0')
-            lab.grid(row=1+i, column=j, pady=10)
+            lab.grid(row=1 + i, column=j, pady=10)
             self.labels_h.append(lab)
         grid_matrix.pack(anchor=NE, padx=5, pady=30)
 
         info_group_section.pack(anchor=N)
         homog_section.pack(fill='both', anchor=N)
-
         homography_content.pack(fill='both', expand=True)
 
-        self.per_viewer = MapViewer(tab_perimeters)
-        self.per_viewer.pack(anchor=NE, padx=5)
+        per_content = ScrollableFrame(tab_perimeters)
+        per_view_section = Frame(per_content.scrollable_frame, borderwidth=1, relief="raised")
+        per_view_group_section = Frame(per_view_section)
+        per_list_group_section = Frame(per_view_group_section)
+        per_list_title = Label(per_list_group_section, text="Perimeter management")
+        self.per_list = Listbox(per_list_group_section, width=60, height=30)
+        self.per_list.configure(exportse=False)
+        per_bt_section = Frame(per_list_group_section)
+        self.per_add_bt = Button(per_bt_section, text="Add")
+        self.per_rm_bt = Button(per_bt_section, text="Remove")
+        self.per_viewer = MapViewer(per_view_group_section)
 
+        per_view_section.pack(fill='both', anchor=N)
+        per_view_group_section.pack(anchor=N)
+
+        per_list_group_section.pack(side=LEFT, padx=5)
+        self.per_viewer.pack(side=LEFT, padx=5)
+
+        per_list_title.pack()
+        self.per_list.pack(anchor=N, fill='both')
+
+        per_bt_section.pack(anchor=N, fill='both')
+        self.per_add_bt.pack(side=RIGHT)
+        self.per_rm_bt.pack(side=RIGHT)
+
+        per_content.pack(fill='both', expand=True)
 
         tab_parent.pack(expand=1, fill='both')
-
-    def validate(self, action, index, value_if_allowed,
-                 prior_value, text, validation_type, trigger_type, widget_name):
-        if value_if_allowed:
-            try:
-                float(value_if_allowed)
-                return True
-            except ValueError:
-                return False
-        else:
-            return False
 
     def set_coord_entries(self, coords):
         iterables = [range(0, coords.shape[0]), range(0, coords.shape[1])]
         for n, (i, j) in enumerate(itertools.product(*iterables)):
             self.entries_coord[n].config(validate="none")
             self.entries_coord[n].delete(0, END)
-            self.entries_coord[n].insert(0,str(coords[i][j]))
+            self.entries_coord[n].insert(0, str(coords[i][j]))
             self.entries_coord[n].config(validate="key")
 
     def set_homography_matrix(self, matrix):
         iterables = [range(0, 3), range(0, 3)]
         for n, (i, j) in enumerate(itertools.product(*iterables)):
-            self.labels_h[n].configure(text=str('%.10f'%(matrix[i][j])))
+            self.labels_h[n].configure(text=str('%.10f' % (matrix[i][j])))
 
     def set_camera_image(self, filename, img):
-        self.cam_img=img
-        self.filename=filename
+        self.cam_img = img
+        self.filename = filename
 
-        mywidth=800
+        mywidth = 800
         wpercent = (mywidth / float(img.size[0]))
         hsize = int((float(img.size[1]) * float(wpercent)))
 
@@ -198,11 +214,12 @@ class ApplicationGUI():
         self.label_filename_var.configure(text=filename)
 
     def set_mousse_loc(self, point):
-        self.label_pixel_loc_var.configure(text='('+str(round(point[0]))+', '+str(round(point[1]))+')')
+        self.label_pixel_loc_var.configure(text='(' + str(round(point[0])) + ', ' + str(round(point[1])) + ')')
 
     def set_point_loc(self, points):
         for n in range(0, 4):
-            self.labels_points[n].configure(text='(' + str(int(round(points[n][0])))+', '+str(int(round(points[n][1]))) + ')')
+            self.labels_points[n].configure(
+                text='(' + str(int(round(points[n][0]))) + ', ' + str(int(round(points[n][1]))) + ')')
 
     def update_point_marks(self, points, img_size):
 
@@ -212,10 +229,11 @@ class ApplicationGUI():
             script_dir = os.path.dirname(__file__)
             icon_path = os.path.join(script_dir, icon)
             photo = ImageTk.PhotoImage(Image.open(icon_path))
-            icon_center = (photo.width()/2, photo.height()/2)
+            icon_center = (photo.width() / 2, photo.height() / 2)
             self.panel_camera_canvas.icons.append(photo)
-            self.panel_camera_canvas.create_image((int(img_point_loc[0]-icon_center[0]), int(img_point_loc[1]-icon_center[1])),
-                                                  image=self.panel_camera_canvas.icons[i], anchor='nw')
+            self.panel_camera_canvas.create_image(
+                (int(img_point_loc[0] - icon_center[0]), int(img_point_loc[1] - icon_center[1])),
+                image=self.panel_camera_canvas.icons[i], anchor='nw')
 
     def update_coord_marks(self, points):
         self.homo_viewer.update_coord_marks(points)
@@ -233,9 +251,32 @@ class ApplicationGUI():
     def set_coordinates(self, lat, lon):
         self.homo_viewer.set_coordinates(lat, lon)
 
+    def per_updated(self, perimeters_px, perimeters):
+        self.per_viewer.update_per_marks(perimeters_px)
+        selections = list(self.per_list.curselection())
+        self.per_list.delete(0, 'end')
+        for i, perimeter in enumerate(perimeters):
+            per_text = str(perimeter).strip('[]')
+            self.per_list.insert(i, per_text)
+        for selection in selections:
+            if selection < len(perimeters):
+                self.per_list.selection_set(selection, selection)
+
 
 def insert_entry_without_validation(entry, value):
     entry.config(validate="none")
     entry.delete(0, END)
     entry.insert(0, value)
     entry.configure(validate="key")
+
+
+def validate(action, index, value_if_allowed,
+             prior_value, text, validation_type, trigger_type, widget_name):
+    if value_if_allowed:
+        try:
+            float(value_if_allowed)
+            return True
+        except ValueError:
+            return False
+    else:
+        return False
