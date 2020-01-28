@@ -5,26 +5,43 @@ class PerimeterManager:
 
     def __init__(self):
         self.perimeters = Observable([])
-        self.index = 0
+        self.perimeters_px = Observable([])
 
-    def add_perimeter(self, first_point):
-        new_per = [first_point]
+    def add_perimeter(self):
         perimeters = self.perimeters.get()
-        perimeters.append(new_per)
+        perimeters.append([])
         self.perimeters.set(perimeters)
 
-    def add_point(self, point):
+        perimeters_px = self.perimeters_px.get()
+        perimeters_px.append([])
+        self.perimeters_px.set(perimeters_px)
+
+    def add_point(self, coord, point, indexes):
         perimeters = self.perimeters.get()
+        perimeters_px = self.perimeters_px.get()
+        indexes = list(indexes)
+
         if not perimeters:
-            self.add_perimeter(point)
-        else:
-            perimeters = self.perimeters.get()
-            perimeters[self.index].append(point)
+            return
+
+        for index in indexes:
+            perimeters[index].append(coord)
+            perimeters_px[index].append(point)
             self.perimeters.set(perimeters)
+            self.perimeters_px.set(perimeters_px)
+
+    def remove_perimeters(self, indexes):
+        for index in indexes:
+            self.remove_perimeter(index)
 
     def remove_perimeter(self, index):
-        self.perimeters.set(self.perimeters.get().remove(index))
-        self.index -= 1
+        perimeters = self.perimeters.get()
+        perimeters_px = self.perimeters_px.get()
+        del perimeters[index]
+        del perimeters_px[index]
+        self.perimeters.set(perimeters)
+        self.perimeters_px.set(perimeters_px)
 
-    def close_perimeter(self):
-        self.index += 1
+    def reset_per(self):
+        self.perimeters.set([])
+        self.perimeters_px.set([])
