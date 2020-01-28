@@ -7,14 +7,18 @@ from tkinter import filedialog
 from PIL import Image
 from src.Model.JSON import jsonserializer
 import itertools
+import webbrowser
 import numpy as np
+
+REPO_URL = "https://github.com/JuanIsernGhosn/homography-calibrator/blob/master/README.md"
 
 class Controller:
     def __init__(self, root):
         self.view = ApplicationGUI(root)
         self.view.menu1.entryconfigure('Open image', command=self.change_image_diag)
-        self.view.menu1.entryconfigure('Load config. file', command=self.load_conf_file)
-        self.view.menu1.entryconfigure('Save config. file', command=self.save_conf_file)
+        self.view.menu1.entryconfigure('Load camera config.', command=self.load_conf_file)
+        self.view.menu1.entryconfigure('Save camera config.', command=self.save_conf_file)
+        self.view.menu2.entryconfigure('Save perimeter config.', command=self.save_per_file)
         self.view.button_homography.configure(command=self.calculate_homography)
 
         self.calculator = HomographyCalculator()
@@ -25,21 +29,24 @@ class Controller:
         self.calculator.coord.addCallback(self.coord_updated)
 
         self.per_manager = PerimeterManager()
-        self.per_manager.perimeters.addCallback(self.per_updated)
+        self.per_manager.perimeters_px.addCallback(self.per_updated)
 
         self.homo_bird_viewer = BirdViewer()
         self.homo_bird_viewer.map.addCallback(self.homo_bird_view_image_changed)
         self.view.homo_viewer.zoom_slidder.configure(command=self.change_homo_zoom)
         for rb in self.view.homo_viewer.map_type_rbs:
-            rb.configure(command=self.change_map_type)
+            rb.configure(command=self.change_homo_map_type)
         self.view.homo_viewer.search_button.configure(command=self.change_homo_coords)
 
         self.per_bird_viewer = BirdViewer()
         self.per_bird_viewer.map.addCallback(self.peri_bird_view_image_changed)
         self.view.per_viewer.zoom_slidder.configure(command=self.change_per_zoom)
         for rb in self.view.per_viewer.map_type_rbs:
-            rb.configure(command=self.change_map_type)
+            rb.configure(command=self.change_per_map_type)
         self.view.per_viewer.search_button.configure(command=self.change_per_coords)
+
+        self.view.per_add_bt.configure(command=self.add_per)
+        self.view.per_rm_bt.configure(command=self.rm_per)
 
         self.view.panel_camera_canvas.bind('<Motion>', self.change_mousse_loc)
         self.view.panel_camera_canvas.bind('<Button-1>', self.update_point_loc)
@@ -65,7 +72,14 @@ class Controller:
         filename=filedialog.asksaveasfile(mode='w', defaultextension=".txt")
         if filename is None:
             return
-        json = jsonserializer.serialize_data(self.calculator)
+        json = jsonserializer.serialize_homo_data(self.calculator)
+        jsonserializer.save_json_file(json, filename.name)
+
+    def save_per_file(self):
+        filename=filedialog.asksaveasfile(mode='w', defaultextension=".txt")
+        if filename is None:
+            return
+        json = jsonserializer.serialize_homo_data(self.calculator)
         jsonserializer.save_json_file(json, filename.name)
 
     def h_updated(self, matrix):
@@ -139,7 +153,7 @@ class Controller:
         self.view.per_viewer.set_map_type_rb(map.map_type)
         self.view.per_viewer.set_coordinates(map.lat, map.lon)
 
-        self.view.per_viewer.update_coord_marks(self.calculator.px_bird.get())
+        self.view.per_viewer.update_per_marks(self.per_manager.perimeters_px.get())
 
     def point_updated(self, points):
         self.view.set_point_loc(points)
@@ -152,11 +166,23 @@ class Controller:
 
     def change_per_zoom(self, event):
         self.per_bird_viewer.change_zoom(int(event))
+        self.per_manager.reset_per()
 
+    def add_per(self):
+        self.per_manager.add_perimeter()
 
-    def change_map_type(self):
+    def rm_per(self):
+        selection =  self.view.per_list.curselection()
+        if selection:
+            self.per_manager.remove_perimeters(selection)
+
+    def change_homo_map_type(self):
         map_type = self.view.homo_viewer.map_type_var.get()
         self.homo_bird_viewer.change_map_type(map_type)
+
+    def change_per_map_type(self):
+        map_type = self.view.per_viewer.map_type_var.get()
+        self.per_bird_viewer.change_map_type(map_type)
 
     def change_homo_coords(self):
         latitude = self.view.homo_viewer.entry_lat.get()
@@ -172,7 +198,13 @@ class Controller:
         self.per_bird_viewer.change_map_coords(latitude, longitude)
 
     def update_perimeters(self, event):
-        self.per_manager.add_point((event.x, event.y))
+        coord = self.per_bird_viewer.get_coord_from_px((event.x, event.y))
+        self.per_manager.add_point(coord, (event.x, event.y), self.view.per_list.curselection())
 
-    def per_updated(self, perimeters):
-        self.view.per_viewer.per_updated(perimeters)
+    def per_updated(self, perimeters_px):
+        perimeters = self.per_manager.perimeters.get()
+        self.view.per_updated(perimeters_px, perimeters)
+
+
+def go_to_documentation_action():
+    webbrowser.open(REPO_URL)
