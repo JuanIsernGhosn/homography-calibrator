@@ -24,11 +24,11 @@ class ApplicationGUI():
         self.set_homography_matrix(h)
 
     def set_basic_options(self):
-        self.root.title("Homography calibrator")
+        self.root.title("Homography calibrator & Secure perimeters editor")
         self.root.option_add("*Font", "Helvetica 12")  # Fuente predeterminada
         self.root.option_add('*tearOff', False)  # Deshabilita submenús flotantes
-        self.root.minsize(1200, 800)  # Establece tamaño minimo ventana
-        self.root.attributes('-fullscreen', True)
+        self.root.minsize(1500, 900)  # Establece tamaño minimo ventana
+        #self.root.attributes('-fullscreen', True)
         self.point_selected = 0
 
     def set_commands(self):
@@ -51,7 +51,8 @@ class ApplicationGUI():
         self.menu1.add_command(label='Load camera config.', underline=0, compound=LEFT)
         self.menu1.add_command(label='Save camera config.', underline=0, compound=LEFT)
         self.menu1.add_separator()
-        self.menu1.add_command(label='Save perimeter config', underline=0, compound=LEFT)
+        self.menu1.add_command(label='Load perimeter config.', underline=0, compound=LEFT)
+        self.menu1.add_command(label='Save perimeter config.', underline=0, compound=LEFT)
         self.menu2.add_command(label='Documentation', underline=0, compound=LEFT)
 
         # Tab manager
@@ -153,8 +154,8 @@ class ApplicationGUI():
         homog_section.pack(fill='both', anchor=N)
         homography_content.pack(fill='both', expand=True)
 
-        per_content = ScrollableFrame(tab_perimeters)
-        per_view_section = Frame(per_content.scrollable_frame, borderwidth=1, relief="raised")
+        per_content = Frame(tab_perimeters)
+        per_view_section = Frame(per_content, borderwidth=1, relief="raised")
         per_view_group_section = Frame(per_view_section)
         per_list_group_section = Frame(per_view_group_section)
         per_list_title = Label(per_list_group_section, text="Perimeter management")
