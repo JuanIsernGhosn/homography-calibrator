@@ -10,7 +10,6 @@ import math
 _EARTHPIX = 268435456  # Number of pixels in half the earth's circumference at zoom = 21
 _DEGREE_PRECISION = 4  # Number of decimal places for rounding coordinates
 _TILESIZE = 640        # Larget tile we can grab without paying
-_DEGREE_PRECISION = 4  # Number of decimal places for rounding coordinates
 _pixrad = _EARTHPIX / math.pi
 
 
@@ -36,12 +35,12 @@ def _grab_tile(lat, lon, zoom, maptype, _TILESIZE):
     return tile
 
 
-class BirdViewer:
+class BirdCalculator:
 
     def __init__(self):
         self.map = Observable(Map())
 
-    def change_map(self, lat, lon, zoom, map_type):
+    def change_map(self, lat, lon, zoom, map_type='satellite'):
         map_img = _grab_tile(lat, lon, zoom, map_type, _TILESIZE)
         map = Map(lat, lon, zoom, map_type, map_img)
         self.map.set(map)
