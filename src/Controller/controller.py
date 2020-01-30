@@ -1,8 +1,8 @@
 from src.View.appgui import ApplicationGUI
 from src.Model.homographycalculator import HomographyCalculator
 from src.Model.perimetermanager import PerimeterManager
-from Model.birdviewer import BirdViewer
-from src.Model.JSON.modeldeserializer import CalculatorDeserializer
+from Model.birdcalculator import BirdCalculator
+from src.Model.JSON.modeldeserializer import HomographyDeserializer, PerimetersDeserializer
 from tkinter import filedialog
 from PIL import Image
 from src.Model.JSON import jsonserializer
@@ -18,27 +18,29 @@ class Controller:
         self.view.menu1.entryconfigure('Open image', command=self.change_image_diag)
         self.view.menu1.entryconfigure('Load camera config.', command=self.load_conf_file)
         self.view.menu1.entryconfigure('Save camera config.', command=self.save_conf_file)
-        self.view.menu2.entryconfigure('Save perimeter config.', command=self.save_per_file)
+        self.view.menu1.entryconfigure('Load perimeter config.', command=self.load_per_file)
+        self.view.menu1.entryconfigure('Save perimeter config.', command=self.save_per_file)
+        self.view.menu2.entryconfigure('Documentation', command=go_to_documentation_action)
         self.view.button_homography.configure(command=self.calculate_homography)
 
-        self.calculator = HomographyCalculator()
-        self.calculator.image.addCallback(self.camera_image_changed)
-        self.calculator.px.addCallback(self.point_updated)
-        self.calculator.h.addCallback(self.h_updated)
-        self.calculator.px_bird.addCallback(self.coord_point_updated)
-        self.calculator.coord.addCallback(self.coord_updated)
+        self.homo_calculator = HomographyCalculator()
+        self.homo_calculator.image.addCallback(self.camera_image_changed)
+        self.homo_calculator.px.addCallback(self.point_updated)
+        self.homo_calculator.h.addCallback(self.h_updated)
+        self.homo_calculator.px_bird.addCallback(self.coord_point_updated)
+        self.homo_calculator.coord.addCallback(self.coord_updated)
 
         self.per_manager = PerimeterManager()
         self.per_manager.perimeters_px.addCallback(self.per_updated)
 
-        self.homo_bird_viewer = BirdViewer()
+        self.homo_bird_viewer = BirdCalculator()
         self.homo_bird_viewer.map.addCallback(self.homo_bird_view_image_changed)
         self.view.homo_viewer.zoom_slidder.configure(command=self.change_homo_zoom)
         for rb in self.view.homo_viewer.map_type_rbs:
             rb.configure(command=self.change_homo_map_type)
         self.view.homo_viewer.search_button.configure(command=self.change_homo_coords)
 
-        self.per_bird_viewer = BirdViewer()
+        self.per_bird_viewer = BirdCalculator()
         self.per_bird_viewer.map.addCallback(self.peri_bird_view_image_changed)
         self.view.per_viewer.zoom_slidder.configure(command=self.change_per_zoom)
         for rb in self.view.per_viewer.map_type_rbs:
@@ -62,24 +64,43 @@ class Controller:
             return
 
         json = jsonserializer.read_json_file(filename)
-        calculator = CalculatorDeserializer().deserialize(json)
+        homo_calculator, bird_calculator = HomographyDeserializer().deserialize(json)
 
-        self.calculator.px.set(calculator.px.get())
-        self.calculator.h.set(calculator.h.get())
-        self.calculator.coord.set(calculator.coord.get())
+        self.homo_calculator.px.set(homo_calculator.px.get())
+        self.homo_calculator.h.set(homo_calculator.h.get())
+        self.homo_calculator.coord.set(homo_calculator.coord.get())
+        self.homo_calculator.px_bird.set(homo_calculator.px_bird.get())
+
+        self.homo_bird_viewer.map.set(bird_calculator.map.get())
 
     def save_conf_file(self):
         filename=filedialog.asksaveasfile(mode='w', defaultextension=".txt")
         if filename is None:
             return
-        json = jsonserializer.serialize_homo_data(self.calculator)
+        json = jsonserializer.serialize_homo_data(self.homo_calculator, self.homo_bird_viewer)
         jsonserializer.save_json_file(json, filename.name)
+
+    def load_per_file(self):
+        filename = filedialog.askopenfilename(initialdir=".",
+                                              title="Open perimeters file",
+                                              filetypes= (("txt files","*.txt"),
+                                                           ("all files","*.*")))
+        if filename is None:
+            return
+
+        json = jsonserializer.read_json_file(filename)
+        per_manager, bird_calculator = PerimetersDeserializer().deserialize(json)
+
+        self.per_manager.perimeters.set(per_manager.perimeters.get())
+        self.per_manager.perimeters_px.set(per_manager.perimeters_px.get())
+
+        self.per_bird_viewer.map.set(bird_calculator.map.get())
 
     def save_per_file(self):
         filename=filedialog.asksaveasfile(mode='w', defaultextension=".txt")
         if filename is None:
             return
-        json = jsonserializer.serialize_homo_data(self.calculator)
+        json = jsonserializer.serialize_per_data(self.per_manager, self.per_bird_viewer)
         jsonserializer.save_json_file(json, filename.name)
 
     def h_updated(self, matrix):
@@ -100,22 +121,22 @@ class Controller:
         iterables = [range(0, coords.shape[0]), range(0, coords.shape[1])]
         for n, (i, j) in enumerate(itertools.product(*iterables)):
             coords[i][j]=self.view.entries_coord[n].get()
-        self.calculator.coord.set(coords, callbacks=False)
-        self.calculator.calculate_h()
+        self.homo_calculator.coord.set(coords, callbacks=False)
+        self.homo_calculator.calculate_h()
 
     def change_mousse_loc(self, event):
         x, y = event.x / self.view.cam_img.size[0], event.y / self.view.cam_img.size[1]
-        point = self.calculator.get_real_mousse_loc((x,y))
+        point = self.homo_calculator.get_real_mousse_loc((x, y))
         self.view.set_mousse_loc(point)
 
     def update_point_loc(self, event):
         x, y = event.x / self.view.cam_img.size[0], event.y / self.view.cam_img.size[1]
-        self.calculator.update_point_loc((x,y), self.view.point_selected)
+        self.homo_calculator.update_point_loc((x, y), self.view.point_selected)
 
     def update_point_coords(self, event):
         (lat, lon) = self.homo_bird_viewer.get_coord_from_px((event.x, event.y))
-        self.calculator.update_coords((lat, lon), self.view.point_selected)
-        self.calculator.update_point_coords((event.x, event.y), self.view.point_selected)
+        self.homo_calculator.update_coords((lat, lon), self.view.point_selected)
+        self.homo_calculator.update_point_coords((event.x, event.y), self.view.point_selected)
 
     def change_image_diag(self):
         filename = filedialog.askopenfile(initialdir = "'/home/jisern/repositories/homography-calibrator/src/", title = "Select file",
@@ -128,7 +149,7 @@ class Controller:
 
     def change_camera_image(self, filename):
         self.img = Image.open(filename)
-        self.calculator.change_image(filename, self.img)
+        self.homo_calculator.change_image(filename, self.img)
 
     def camera_image_changed(self, image):
         self.view.set_camera_image(image.filename, image.img)
@@ -145,7 +166,7 @@ class Controller:
         self.view.homo_viewer.set_map_type_rb(map.map_type)
         self.view.homo_viewer.set_coordinates(map.lat, map.lon)
 
-        self.view.homo_viewer.update_coord_marks(self.calculator.px_bird.get())
+        self.view.homo_viewer.update_coord_marks(self.homo_calculator.px_bird.get())
 
     def peri_bird_view_image_changed(self, map):
         self.view.per_viewer.set_image(map.img)
@@ -157,12 +178,12 @@ class Controller:
 
     def point_updated(self, points):
         self.view.set_point_loc(points)
-        self.view.update_point_marks(points, (self.calculator.image.get().height, self.calculator.image.get().width))
+        self.view.update_point_marks(points, (self.homo_calculator.image.get().height, self.homo_calculator.image.get().width))
 
     def change_homo_zoom(self, event):
         self.homo_bird_viewer.change_zoom(int(event))
-        self.calculator.reset_coords()
-        self.calculator.reset_px_bird()
+        self.homo_calculator.reset_coords()
+        self.homo_calculator.reset_px_bird()
 
     def change_per_zoom(self, event):
         self.per_bird_viewer.change_zoom(int(event))
@@ -189,8 +210,8 @@ class Controller:
         longitude = self.view.homo_viewer.entry_lon.get()
         self.homo_bird_viewer.change_map_coords(latitude, longitude)
 
-        self.calculator.reset_coords()
-        self.calculator.reset_px_bird()
+        self.homo_calculator.reset_coords()
+        self.homo_calculator.reset_px_bird()
 
     def change_per_coords(self):
         latitude = self.view.per_viewer.entry_lat.get()
