@@ -1,4 +1,4 @@
-## Homography camera calibration tool & Secure perimeters editor
+## Homography camera calibration tool & Secure perimeter editor
 The purpose of this software is to assist in the calibration of one or more cameras by calculating the homographic matrix with respect to the dominant ground plane. Thus, a homographic correspondence is achieved between any position of an image from a camera and the position in real world coordinates.
 
 Additionally, a module is included to create and edit perimeters on a bird's eye view of the world. In video surveillance tasks, it is often necessary to create perimeters to which special attention must be paid and which must be constantly monitored.
@@ -15,7 +15,7 @@ The homography matrix is a 3x3 matrix but with 8 DoF (degrees of freedom) as it 
  
 Once the homography has been calculated, the information can be stored in a configuration file. Similarly, information from a previous calibration can be retrieved.
  
- ### Secure perimeters editor
+ ### Secure perimeter editor
  
 ![secure perimeter editor](media/perimeter_editor_GUI.png)
  
