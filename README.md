@@ -7,11 +7,11 @@ Additionally, a module is included to create and edit perimeters on a bird's eye
 
 ![homography calibrator](media/homography_calibrator_GUI.png) 
  
-Briefly, the planar homography relates the transformation between two planes (up to a scale factor:
+Briefly, the planar homography relates the transformation between two planes (up to a scale factor):
  
 ![homography matrix](media/homography_matrix.png)
  
-The homography matrix is a 3x3 matrix but with 8 DoF (degrees of freedom) as it is estimated up to a scale. It is generally normalized (see also 1) with h<sub>33</sub>=1 or h<sup>2</sup><sub>11</sub>+h<sup>2</sup><sub>12</sub>+h<sup>2</sup><sub>13</sub>+h<sup>2</sup><sub>21</sub>+h<sup>2</sup><sub>22</sub>+h<sup>2</sup><sub>23</sub>+h<sup>2</sup><sub>31</sub>+h<sup>2</sup><sub>32</sub>+h<sup>2</sup><sub>33</sub>=1.
+The homography matrix is a 3x3 matrix but with 8 DoF (degrees of freedom) as it is estimated up to a scale. It is generally normalized with h<sub>33</sub>=1 or h<sup>2</sup><sub>11</sub>+h<sup>2</sup><sub>12</sub>+h<sup>2</sup><sub>13</sub>+h<sup>2</sup><sub>21</sub>+h<sup>2</sup><sub>22</sub>+h<sup>2</sup><sub>23</sub>+h<sup>2</sup><sub>31</sub>+h<sup>2</sup><sub>32</sub>+h<sup>2</sup><sub>33</sub>=1.
  
 Once the homography has been calculated, the information can be stored in a configuration file. Similarly, information from a previous calibration can be retrieved.
  
