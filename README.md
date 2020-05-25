@@ -30,3 +30,6 @@ This module allows the creation and editing of polygons from the point to point 
  * ~~Calculate perimeters withing recorded scene.~~         *__DONE__*
  ## Authors
 * **Juan Isern** - *Initial work* - [JuanIsernGhosn](https://github.com/JuanIsernGhosn/)
+
+## License
+*Homography camera calibration tool & Secure perimeter editor* is licensed under the [BSD 3-Clause license](https://github.com/JuanIsernGhosn/homography-calibrator/blob/master/BSD-3-CLAUSE-LICENSE.txt).
